@@ -177,10 +177,6 @@
             margin-bottom: 4px;
             font-weight: 700;
         }
-        .teacher-info p {
-            font-size: 13px;
-            color: #9ca3af;
-        }
         .lessons-section {
             background: #111827;
             padding: 30px;
@@ -194,8 +190,17 @@
             margin-bottom: 20px;
             font-size: 20px;
         }
+        .unit-title {
+            color: #38bdf8;
+            font-size: 17px;
+            font-weight: bold;
+            margin-top: 20px;
+            margin-bottom: 12px;
+            border-bottom: 1px dashed #1e293b;
+            padding-bottom: 6px;
+        }
         .lesson-item {
-            padding: 20px 0;
+            padding: 15px 0;
             border-bottom: 1px solid #1f2937;
             margin-bottom: 15px;
         }
@@ -205,9 +210,9 @@
         }
         .lesson-title {
             font-weight: 700;
-            font-size: 16px;
+            font-size: 15px;
             color: #f3f4f6;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
         .video-container {
             position: relative;
@@ -266,7 +271,7 @@
         }
         const guardDb = firebase.database();
 
-        // فحص جلسة الطالب وكود الدخول
+        // فحص جلسة الطالب
         async function checkStudentSession() {
             const activeCode = localStorage.getItem('activeStudentCode');
             if (!activeCode) {
@@ -339,26 +344,26 @@
     <script>
         let currentLang = 'ar';
         
-        // قائمة المدرسين الأساسية بأساميهم وصورهم وموادهم الثابتة
-        const baseTeachersList = [
-            { id: "haitham_thabet", nameAr: "هيثم ثابت", nameEn: "Haitham Thabet", subjectAr: "اللغة العربية", subjectEn: "Arabic Language", image: "https://i.postimg.cc/Ghk1RMsg/lqtt-shasht-2026-09-10-040523.png" },
-            { id: "mohamed_fahmy", nameAr: "محمد فهمي", nameEn: "Mohamed Fahmy", subjectAr: "اللغة العربية", subjectEn: "Arabic Language", image: "https://i.postimg.cc/yYqzwqkq/lqtt-shasht-2026-09-10-040509.png" },
-            { id: "salma_gomaa", nameAr: "سلمى جمعة", nameEn: "Salma Gomaa", subjectAr: "اللغة الإنجليزية", subjectEn: "English", image: "https://i.postimg.cc/fyPQbFvV/lqtt-shasht-2026-09-10-035030.png" },
-            { id: "hany_abdelaty", nameAr: "هاني عبد العاطي", nameEn: "Hany Abdelaty", subjectAr: "اللغة الإنجليزية", subjectEn: "English", image: "https://i.postimg.cc/dt8KFWTS/lqtt-shasht-2026-09-10-040538.png" },
-            { id: "peter_reda", nameAr: "بيتر رضا", nameEn: "Peter Reda", subjectAr: "العلوم", subjectEn: "Science", image: "https://i.postimg.cc/GtFgW5SP/lqtt-shasht-2026-09-10-041005.png" },
-            { id: "mahmoud_hassan", nameAr: "محمود حسان", nameEn: "Mahmoud Hassan", subjectAr: "العلوم", subjectEn: "Science", image: "https://i.postimg.cc/mZzmc1kH/lqtt-shasht-2026-09-09-012312.png" },
-            { id: "ibrahim_aldosari", nameAr: "إبراهيم الدوسري", nameEn: "Ibrahim Aldosari", subjectAr: "الدراسات الاجتماعية", subjectEn: "Social Studies", image: "https://i.postimg.cc/KjzQHWb0/lqtt-shasht-2026-09-09-012550.png" },
-            { id: "eslam_soliman", nameAr: "إسلام سليمان", nameEn: "Eslam Soliman", subjectAr: "الرياضيات", subjectEn: "Mathematics", image: "https://i.postimg.cc/RCpBG6xT/lqtt-shasht-2026-09-10-035113.png" },
-            { id: "mohamed_elsheikh", nameAr: "محمد الشيخ", nameEn: "Mohamed Elsheikh", subjectAr: "الرياضيات", subjectEn: "Mathematics", image: "https://i.postimg.cc/c1zJC5Cm/lqtt-shasht-2026-09-10-042650.png" },
-            { id: "mahmoud_badr", nameAr: "محمود بدر", nameEn: "Mahmoud Badr", subjectAr: "اللغة الألمانية", subjectEn: "German", image: "https://i.postimg.cc/BbT7rVw2/lqtt-shasht-2026-09-10-040840.png" },
-            { id: "ahmed_elagamy", nameAr: "أحمد العجمي", nameEn: "Ahmed Elagamy", subjectAr: "الرياضيات (لغات)", subjectEn: "Math (Languages)", image: "https://i.postimg.cc/90dg6nNG/lqtt-shasht-2026-09-10-040937.png" },
-            { id: "shadwa_shouman", nameAr: "شدوى شومان", nameEn: "Shadwa Shouman", subjectAr: "العلوم (لغات)", subjectEn: "Science (Languages)", image: "https://i.postimg.cc/pVcHkhMk/lqtt-shasht-2026-09-10-035212.png" },
-            { id: "abdallah_youssef", nameAr: "عبد الله يوسف", nameEn: "Abdallah Youssef", subjectAr: "العلوم (لغات)", subjectEn: "Science (Languages)", image: "https://i.postimg.cc/sxYHkN0Y/lqtt-shasht-2026-09-10-040947.png" },
-            { id: "abdelrahman_obeid", nameAr: "عبد الرحمن عبيد", nameEn: "Abdelrahman Obeid", subjectAr: "اللغة الفرنسية", subjectEn: "French", image: "https://i.postimg.cc/66bXz2xc/lqtt-shasht-2026-09-10-035144.png" },
-            { id: "shaimaa_shouman", nameAr: "شيماء شومان", nameEn: "Shaimaa Shouman", subjectAr: "التربية الإسلامية", subjectEn: "Islamic Education", image: "https://i.postimg.cc/G3gCz8nq/lqtt-shasht-2026-09-10-035235.png" }
+        // قائمة المدرسين الحقيقية بالأسماء والصور
+        const teachersList = [
+            { name: "هيثم ثابت (اللغة العربية)", nameEn: "Haitham Thabet (Arabic)", image: "https://i.postimg.cc/Ghk1RMsg/lqtt-shasht-2026-09-10-040523.png" },
+            { name: "محمد فهمي (اللغة العربية)", nameEn: "Mohamed Fahmy (Arabic)", image: "https://i.postimg.cc/yYqzwqkq/lqtt-shasht-2026-09-10-040509.png" },
+            { name: "سلمى جمعة (اللغة الإنجليزية)", nameEn: "Salma Gomaa (English)", image: "https://i.postimg.cc/fyPQbFvV/lqtt-shasht-2026-09-10-035030.png" },
+            { name: "هاني عبد العاطي (اللغة الإنجليزية)", nameEn: "Hany Abdelaty (English)", image: "https://i.postimg.cc/dt8KFWTS/lqtt-shasht-2026-09-10-040538.png" },
+            { name: "بيتر رضا (العلوم)", nameEn: "Peter Reda (Science)", image: "https://i.postimg.cc/GtFgW5SP/lqtt-shasht-2026-09-10-041005.png" },
+            { name: "محمود حسان (العلوم)", nameEn: "Mahmoud Hassan (Science)", image: "https://i.postimg.cc/mZzmc1kH/lqtt-shasht-2026-09-09-012312.png" },
+            { name: "إبراهيم الدوسري (الدراسات الاجتماعية)", nameEn: "Ibrahim Aldosari (Social Studies)", image: "https://i.postimg.cc/KjzQHWb0/lqtt-shasht-2026-09-09-012550.png" },
+            { name: "إسلام سليمان (الرياضيات)", nameEn: "Eslam Soliman (Mathematics)", image: "https://i.postimg.cc/RCpBG6xT/lqtt-shasht-2026-09-10-035113.png" },
+            { name: "محمد الشيخ (الرياضيات)", nameEn: "Mohamed Elsheikh (Mathematics)", image: "https://i.postimg.cc/c1zJC5Cm/lqtt-shasht-2026-09-10-042650.png" },
+            { name: "محمود بدر (اللغة الألمانية)", nameEn: "Mahmoud Badr (German)", image: "https://i.postimg.cc/BbT7rVw2/lqtt-shasht-2026-09-10-040840.png" },
+            { name: "أحمد العجمي (الرياضيات لغات)", nameEn: "Ahmed Elagamy (Math Languages)", image: "https://i.postimg.cc/90dg6nNG/lqtt-shasht-2026-09-10-040937.png" },
+            { name: "شدوى شومان (العلوم لغات)", nameEn: "Shadwa Shouman (Science Languages)", image: "https://i.postimg.cc/pVcHkhMk/lqtt-shasht-2026-09-10-035212.png" },
+            { name: "عبد الله يوسف (العلوم لغات)", nameEn: "Abdallah Youssef (Science Languages)", image: "https://i.postimg.cc/sxYHkN0Y/lqtt-shasht-2026-09-10-040947.png" },
+            { name: "عبد الرحمن عبيد (اللغة الفرنسية)", nameEn: "Abdelrahman Obeid (French)", image: "https://i.postimg.cc/66bXz2xc/lqtt-shasht-2026-09-10-035144.png" },
+            { name: "شيماء شومان (التربية الإسلامية)", nameEn: "Shaimaa Shouman (Islamic Ed)", image: "https://i.postimg.cc/G3gCz8nq/lqtt-shasht-2026-09-10-035235.png" }
         ];
 
-        let teachersData = [];
+        let firebaseLessonsData = {};
 
         window.onload = function() {
             const activeCode = localStorage.getItem('activeStudentCode');
@@ -367,33 +372,16 @@
                 return;
             }
 
-            // جلب الدروس المضافة من فايربيس ودمجها مع قائمة المدرسين الأساسية
-            guardDb.ref('lessons/first_prep').once('value')
+            // سحب الدروس من المسار الصحيح لأولى إعدادي في فايربيس
+            guardDb.ref('lessons/أولى_إعدادي').once('value')
                 .then(snapshot => {
-                    const firebaseLessons = snapshot.exists() ? snapshot.val() : {};
-                    
-                    teachersData = baseTeachersList.map(teacher => {
-                        // لو فيه دروس متسجلة للمدرس ده في فايربيس بنجيبها، وإلا بنسيبها فاضية
-                        let tLessons = [];
-                        if (firebaseLessons[teacher.id] && firebaseLessons[teacher.id].lessons) {
-                            const rawLessons = firebaseLessons[teacher.id].lessons;
-                            tLessons = Array.isArray(rawLessons) ? rawLessons : Object.values(rawLessons);
-                        } else if (firebaseLessons[teacher.nameAr] && firebaseLessons[teacher.nameAr].lessons) {
-                            const rawLessons = firebaseLessons[teacher.nameAr].lessons;
-                            tLessons = Array.isArray(rawLessons) ? rawLessons : Object.values(rawLessons);
-                        }
-                        
-                        return {
-                            ...teacher,
-                            lessons: tLessons
-                        };
-                    });
-
+                    if (snapshot.exists()) {
+                        firebaseLessonsData = snapshot.val();
+                    }
                     renderTeachers();
                 })
                 .catch(err => {
-                    console.log("خطأ في جلب الدروس من فايربيس:", err);
-                    teachersData = baseTeachersList.map(t => ({ ...t, lessons: [] }));
+                    console.log("خطأ في جلب الدروس:", err);
                     renderTeachers();
                 });
         };
@@ -431,8 +419,8 @@
             renderTeachers();
             
             const lessonsView = document.getElementById('lessonsView');
-            if (lessonsView.style.display === 'block' && window.selectedTeacherIndex !== undefined) {
-                selectTeacher(window.selectedTeacherIndex);
+            if (lessonsView.style.display === 'block' && window.selectedTeacherName !== undefined) {
+                selectTeacher(window.selectedTeacherName);
             }
         }
 
@@ -440,69 +428,89 @@
             const grid = document.getElementById('teachersGrid');
             grid.innerHTML = "";
 
-            teachersData.forEach((teacher, index) => {
+            teachersList.forEach((teacher) => {
                 const card = document.createElement('div');
                 card.className = 'teacher-card';
-                card.onclick = () => selectTeacher(index);
+                card.onclick = () => selectTeacher(teacher.name);
 
-                const tName = currentLang === 'ar' ? teacher.nameAr : teacher.nameEn;
-                const tSubject = currentLang === 'ar' ? teacher.subjectAr : teacher.subjectEn;
+                const tName = currentLang === 'ar' ? teacher.name : teacher.nameEn;
 
                 card.innerHTML = `
                     <img src="${teacher.image}" alt="${tName}" class="teacher-avatar">
                     <div class="teacher-info">
                         <h3>${tName}</h3>
-                        <p>${tSubject}</p>
                     </div>
                 `;
                 grid.appendChild(card);
             });
         }
 
-        function selectTeacher(index) {
-            window.selectedTeacherIndex = index;
-            const teacher = teachersData[index];
+        // استخراج كود اليوتيوب بذكاء من أي رابط يكتبه الأدمن
+        function extractYouTubeId(url) {
+            if (!url) return "";
+            url = url.trim();
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : url;
+        }
+
+        function selectTeacher(teacherName) {
+            window.selectedTeacherName = teacherName;
             document.getElementById('teachersView').style.display = 'none';
             document.getElementById('lessonsView').style.display = 'block';
 
-            const tName = currentLang === 'ar' ? teacher.nameAr : teacher.nameEn;
-            const tSubject = currentLang === 'ar' ? teacher.subjectAr : teacher.subjectEn;
-
-            if (currentLang === 'ar') {
-                document.getElementById('selectedTeacherTitle').innerText = `دروس الأستاذ: ${tName} (${tSubject})`;
-            } else {
-                document.getElementById('selectedTeacherTitle').innerText = `Teacher Lessons: ${tName} (${tSubject})`;
-            }
+            document.getElementById('selectedTeacherTitle').innerText = `دروس الأستاذ: ${teacherName}`;
 
             const container = document.getElementById('lessonsListContainer');
             container.innerHTML = "";
 
-            const lessonsList = teacher.lessons || [];
-            if (lessonsList.length === 0) {
-                container.innerHTML = currentLang === 'ar' ? "<p style='color: #9ca3af;'>لا توجد دروس مضافة لهذا المعلم حتى الآن من لوحة التحكم.</p>" : "<p style='color: #9ca3af;'>No lessons added for this teacher yet from the control panel.</p>";
-                return;
+            // البحث عن بيانات المدرس (مع دعم المسافات والشرط السفلي في المسارات)
+            let teacherData = firebaseLessonsData[teacherName] || firebaseLessonsData[teacherName.replace(/\s+/g, '_')] || {};
+
+            let hasLessons = false;
+
+            // المرور على الوحدات والدروس الخاصة بالمدرس
+            for (let unitKey in teacherData) {
+                let unitName = unitKey.replace(/_/g, ' ');
+                let unitsLessons = teacherData[unitKey];
+
+                if (typeof unitsLessons === 'object' && unitsLessons !== null) {
+                    let unitDiv = document.createElement('div');
+                    unitDiv.className = 'unit-title';
+                    unitDiv.innerText = `📂 ${unitName}`;
+                    container.appendChild(unitDiv);
+
+                    for (let lessonId in unitsLessons) {
+                        let lesson = unitsLessons[lessonId];
+                        if (lesson && lesson.lessonName) {
+                            hasLessons = true;
+                            let yId = extractYouTubeId(lesson.youtubeUrl);
+
+                            let lessonDiv = document.createElement('div');
+                            lessonDiv.className = 'lesson-item';
+                            
+                            lessonDiv.innerHTML = `
+                                <div class="lesson-title">📖 ${lesson.lessonName}</div>
+                                <div class="video-container">
+                                    <iframe src="https://www.youtube-nocookie.com/embed/${yId}?enablejsapi=1&playsinline=1&modestbranding=1" 
+                                            title="YouTube video player" 
+                                            frameborder="0" 
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                            allowfullscreen>
+                                    </iframe>
+                                </div>
+                            `;
+                            container.appendChild(lessonDiv);
+                        }
+                    }
+                }
             }
 
-            lessonsList.forEach(lesson => {
-                const lTitle = lesson.titleAr || lesson.title || "درس تعليمي";
-                const yId = lesson.youtube || lesson.youtubeId || lesson.link || "";
-                
-                const lessonDiv = document.createElement('div');
-                lessonDiv.className = 'lesson-item';
-                
-                lessonDiv.innerHTML = `
-                    <div class="lesson-title">${lTitle}</div>
-                    <div class="video-container">
-                        <iframe src="https://www.youtube-nocookie.com/embed/${yId}?enablejsapi=1&playsinline=1&modestbranding=1" 
-                                title="YouTube video player" 
-                                frameborder="0" 
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                                allowfullscreen>
-                        </iframe>
-                    </div>
-                `;
-                container.appendChild(lessonDiv);
-            });
+            if (!hasLessons) {
+                container.innerHTML = currentLang === 'ar' ? 
+                    "<p style='color: #9ca3af; text-align: center; padding: 20px;'>لا توجد دروس مضافة لهذا المعلم حتى الآن.</p>" : 
+                    "<p style='color: #9ca3af; text-align: center; padding: 20px;'>No lessons added for this teacher yet.</p>";
+            }
         }
 
         function showTeachersList() {
