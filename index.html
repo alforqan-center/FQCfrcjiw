@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>On Fire Academy - بوابة تسجيل الدخول</title>
+    <!-- أيقونة الموقع (Favicon) من اللينك الخاص بك -->
+    <link rel="icon" type="image/jpeg" href="https://i.postimg.cc/Fz97Zty5/Whats-App-Image-2026-09-10-at-2-49-35-AM.jpg">
+    <!-- استيراد خطوط احترافية -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,800;0,900;1,800&family=Cairo:wght@600;700;900&display=swap" rel="stylesheet">
+    <!-- استيراد مكتبات Firebase عبر CDN -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: #0b0f19;
+            color: #cbd5e1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255, 107, 0, 0.05) 0%, rgba(11, 15, 25, 0.95) 100%);
+            z-index: -1;
+        }
+        header {
+            background-color: #0f172a;
+            color: #f8fafc;
+            padding: 18px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #1e293b;
+        }
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .site-logo {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid #ff6b00;
+            box-shadow: 0 0 12px rgba(255, 107, 0, 0.3);
+            background-color: #000;
+            flex-shrink: 0;
+        }
+        .site-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .logo-area h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #ffffff;
+        }
+        .logo-area h1 .fire-text {
+            background: linear-gradient(135deg, #ff7700 0%, #ff3b00 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(255, 85, 0, 0.3);
+        }
+        .logo-area span.academy-text {
+            font-family: 'Cairo', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            color: #94a3b8;
+            letter-spacing: 2px;
+            margin-right: 6px;
+        }
+        .portal-badge {
+            font-size: 13px;
+            background: #1e293b;
+            color: #cbd5e1;
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid #334155;
+            font-weight: 600;
+        }
+        .container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .login-card {
+            background: #111827;
+            padding: 40px;
+            border-radius: 14px;
+            box-shadow: 0 20px 30px -5px rgba(0, 0, 0, 0.6), 0 0 20px rgba(255, 107, 0, 0.05);
+            width: 100%;
+            max-width: 420px;
+            border: 1px solid #1f2937;
+            text-align: right;
+        }
+        .login-card h2 {
+            margin-bottom: 8px;
+            color: #f9fafb;
+            font-size: 22px;
+            font-weight: 700;
+        }
+        .login-card p {
+            margin-bottom: 30px;
+            color: #9ca3af;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #d1d5db;
+            font-weight: 600;
+        }
+        .login-card input {
+            width: 100%;
+            padding: 14px;
+            font-size: 20px;
+            text-align: center;
+            background-color: #030712;
+            border: 1px solid #374151;
+            color: #fff;
+            border-radius: 8px;
+            outline: none;
+            transition: all 0.2s ease;
+            letter-spacing: 5px;
+        }
+        .login-card input:focus {
+            border-color: #ff6b00;
+            box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.15);
+        }
+        .login-card button {
+            width: 100%;
+            background: linear-gradient(135deg, #ff6b00, #e65c00);
+            color: white;
+            border: none;
+            padding: 13px;
+            font-size: 16px;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(255, 107, 0, 0.3);
+        }
+        .login-card button:hover {
+            background: linear-gradient(135deg, #e65c00, #cc5200);
+            box-shadow: 0 6px 15px rgba(255, 107, 0, 0.5);
+            transform: translateY(-1px);
+        }
+        .error-msg {
+            color: #f87171;
+            margin-top: 15px;
+            font-size: 13px;
+            display: none;
+            background: rgba(239, 68, 68, 0.1);
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            text-align: center;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            background-color: #0f172a;
+            color: #64748b;
+            font-size: 12px;
+            border-top: 1px solid #1e293b;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-area">
+            <div class="site-logo">
+                <img src="https://i.postimg.cc/Fz97Zty5/Whats-App-Image-2026-09-10-at-2-49-35-AM.jpg" alt="On Fire Logo">
+            </div>
+            <h1><span class="fire-text">On Fire</span> <span class="academy-text">ACADEMY</span></h1>
+        </div>
+        <div class="portal-badge">بوابة الطلاب الرسمية</div>
+    </header>
+
+    <div class="container">
+        <div class="login-card">
+            <h2>تسجيل الدخول</h2>
+            <p>يرجى إدخال الكود التعريفي الخاص بك للوصول إلى المحتوى الدراسي.</p>
+            
+            <div class="form-group">
+                <label for="studentCode">كود الطالب (4 أرقام)</label>
+                <input type="text" id="studentCode" placeholder="••••" maxlength="4" autocomplete="off">
+            </div>
+
+            <button onclick="handleLogin()">دخول المنصة</button>
+            <div id="errorMsg" class="error-msg">الكود غير صحيح أو مستخدم مسبقاً على جهاز آخر.</div>
+        </div>
+    </div>
+
+    <footer>
+        جميع الحقوق محفوظة © On Fire Academy 2026
+    </footer>
+
+    <script>
+        const firebaseConfig = {
+            databaseURL: "https://alforqan-dfb09-default-rtdb.firebaseio.com//"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function getDeviceId() {
+            let deviceId = localStorage.getItem('center_device_id');
+            if (!deviceId) {
+                deviceId = 'dev_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+                localStorage.setItem('center_device_id', deviceId);
+            }
+            return deviceId;
+        }
+
+        // دالة مساعدة لتحديد صفحة المرحلة بناءً على النص المسجل للطالب
+        function getTargetPageByGrade(grade) {
+            switch(grade) {
+                case "أولى إعدادي": return "first-prep.html";
+                case "ثانية إعدادي": return "second-prep.html";
+                case "ثالثة إعدادي": return "third-prep.html";
+                case "أولى ثانوي": return "first-secondary.html";
+                case "ثانية ثانوي": return "second-secondary.html";
+                case "ثالثة ثانوي": return "third-secondary.html";
+                default: return "first-prep.html"; // صفحة افتراضية احتياطية
+            }
+        }
+
+        window.onload = async function() {
+            const savedCode = localStorage.getItem('activeStudentCode');
+            
+            // لو كان الكود المخزن هو كود الكنترول
+            if (savedCode === "0000") {
+                window.location.href = "control.html"; // أو اسم صفحة الكنترول عندك
+                return;
+            }
+
+            if (savedCode) {
+                const currentDevice = getDeviceId();
+                try {
+                    const snapshot = await db.ref('codes/' + savedCode).once('value');
+                    const codeData = snapshot.val();
+                    if (codeData && codeData.deviceId === currentDevice && codeData.grade) {
+                        window.location.href = getTargetPageByGrade(codeData.grade);
+                    }
+                } catch (e) { console.log("خطأ في الاتصال"); }
+            }
+        };
+
+        async function handleLogin() {
+            const codeInput = document.getElementById('studentCode').value.trim();
+            const errorMsg = document.getElementById('errorMsg');
+
+            if (codeInput.length !== 4 || isNaN(codeInput)) {
+                errorMsg.innerText = "يرجى إدخال كود مكون من 4 أرقام بشكل صحيح.";
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            // مسار الكنترول السري (مثال: 0000)
+            if (codeInput === "0000") {
+                localStorage.setItem('activeStudentCode', "0000");
+                window.location.href = "control.html"; // تأكد من تسمية ملف الكنترول بهذا الاسم أو عدله
+                return;
+            }
+
+            errorMsg.style.display = 'none';
+            const currentDevice = getDeviceId();
+            const codeRef = db.ref('codes/' + codeInput);
+
+            try {
+                const snapshot = await codeRef.once('value');
+                const codeData = snapshot.val();
+
+                // التحقق هل الكود مسجل مسبقاً في قاعدة البيانات ولديه مرحلة
+                if (!codeData || !codeData.grade) {
+                    errorMsg.innerText = "عذراً، هذا الكود غير مسجل أو ليس له مرحلة دراسية محددة.";
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+
+                // قفل الجهاز على الكود لو مستخدم قبل كدة بجهاز تاني
+                if (codeData.deviceId) {
+                    if (codeData.deviceId !== currentDevice) {
+                        errorMsg.innerText = "عذراً، هذا الكود مرتبط بجهاز آخر بالفعل.";
+                        errorMsg.style.display = 'block';
+                        return;
+                    }
+                } else {
+                    await codeRef.update({
+                        deviceId: currentDevice,
+                        firstLogin: Date.now()
+                    });
+                }
+
+                // جلب الصفحة الصحيحة بناءً على المرحلة المخزنة للطالب
+                let targetPage = getTargetPageByGrade(codeData.grade);
+
+                localStorage.setItem('activeStudentCode', codeInput);
+                window.location.href = targetPage;
+
+            } catch (error) {
+                console.error(error);
+                errorMsg.innerText = "حدث خطأ في الاتصال بالخادم، يرجى إعادة المحاولة.";
+                errorMsg.style.display = 'block';
+            }
+        }
+
+        document.getElementById('studentCode').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                handleLogin();
+            }
+        });
+    </script>
+</body>
+</html>
