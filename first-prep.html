@@ -508,6 +508,56 @@
 
     </style>
 
+<!-- استيراد فايربيس لو مش موجود في الصفحة -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script>
+    const firebaseConfig = {
+        databaseURL: "https://alforqan-6e69b-default-rtdb.firebaseio.com/"
+    };
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const guardDb = firebase.database();
+
+    // فحص دوري ولحظي لحالة الكود والموبايل
+    async function checkStudentSession() {
+        const activeCode = localStorage.getItem('activeStudentCode');
+        if (!activeCode) {
+            window.location.href = "index.html";
+            return;
+        }
+
+        // لو كود كنترول مسموح له بالبقاء
+        try {
+            const adminSnap = await guardDb.ref('settings/adminCode').once('value');
+            if (adminSnap.exists() && activeCode === adminSnap.val()) return;
+
+            const snap = await guardDb.ref('codes/' + activeCode).once('value');
+            if (!snap.exists()) {
+                localStorage.removeItem('activeStudentCode');
+                window.location.href = "index.html?expired=true";
+                return;
+            }
+
+            const data = snap.val();
+            let status = data.status ? data.status.toString().trim().toLowerCase() : 'active';
+
+            // لو تم إيقاف الاشتراك، طرده فوراً لصفحة اللوجن مع رسالة التوقف
+            if (status === 'inactive' || status === 'stopped' || status === 'false') {
+                localStorage.removeItem('activeStudentCode');
+                window.location.href = "index.html?expired=true";
+                return;
+            }
+        } catch (e) {
+            console.log("فحص الجلسة يعمل في الخلفية...");
+        }
+    }
+
+    // يتم الفحص فور فتح الصفحة أو عمل Refresh
+    window.addEventListener('DOMContentLoaded', checkStudentSession);
+</script>
+    
 </head>
 
 <body>
