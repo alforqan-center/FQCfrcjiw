@@ -225,7 +225,8 @@
             border: 1px solid #374151;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
-        .video-container iframe {
+        .video-container iframe,
+        .video-container video {
             position: absolute;
             top: 0;
             left: 0;
@@ -271,7 +272,6 @@
         }
         const guardDb = firebase.database();
 
-        // فحص جلسة الطالب
         async function checkStudentSession() {
             const activeCode = localStorage.getItem('activeStudentCode');
             if (!activeCode) {
@@ -344,7 +344,6 @@
     <script>
         let currentLang = 'ar';
         
-        // قائمة المدرسين الحقيقية بالأسماء والصور
         const teachersList = [
             { name: "هيثم ثابت (اللغة العربية)", nameEn: "Haitham Thabet (Arabic)", image: "https://i.postimg.cc/Ghk1RMsg/lqtt-shasht-2026-09-10-040523.png" },
             { name: "محمد فهمي (اللغة العربية)", nameEn: "Mohamed Fahmy (Arabic)", image: "https://i.postimg.cc/yYqzwqkq/lqtt-shasht-2026-09-10-040509.png" },
@@ -372,7 +371,6 @@
                 return;
             }
 
-            // سحب الدروس من المسار الصحيح لأولى إعدادي في فايربيس
             guardDb.ref('lessons/أولى_إعدادي').once('value')
                 .then(snapshot => {
                     if (snapshot.exists()) {
@@ -445,13 +443,31 @@
             });
         }
 
-        // استخراج كود اليوتيوب بذكاء من أي رابط يكتبه الأدمن
-        function extractYouTubeId(url) {
-            if (!url) return "";
-            url = url.trim();
-            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-            const match = url.match(regExp);
-            return (match && match[2].length === 11) ? match[2] : url;
+        // دالة ذكية لتوليد عنصر العرض المناسب لأي رابط فيديو في العالم (يوتيوب، فيميو، روابط مباشرة MP4، أو أي مشغل إضافي)
+        function generateVideoEmbed(rawUrl) {
+            if (!rawUrl) return "<p style='color:#ef4444;'>رابط الفيديو غير متوفر</p>";
+            let url = rawUrl.trim();
+
+            // 1. لو الرابط يوتيوب (سواء رابط عادي أو شورتس أو يوتيوب نيوكوكيز)
+            const ytRegExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const ytMatch = url.match(ytRegExp);
+            if (ytMatch && ytMatch[2].length === 11) {
+                let yId = ytMatch[2];
+                return `<iframe src="https://www.youtube-nocookie.com/embed/${yId}?enablejsapi=1&playsinline=1&modestbranding=1" title="YouTube video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
+            }
+
+            // 2. لو الرابط فيديو مباشر (مثل MP4 أو روابط استضافة تنتهي بامتداد فيديو)
+            if (url.match(/\.(mp4|webm|ogg|mov)$/i) || url.includes("blob:") || url.includes("firebaseapp.com") || url.includes("googleapis.com")) {
+                return `<video controls playsinline style="width:100%; height:100%; background:#000;"><source src="${url}" type="video/mp4">متصفحك لا يدعم عرض الفيديو.</video>`;
+            }
+
+            // 3. لو الرابط مخصص لـ iframe جاهز أو منصة أخرى (مثل فيميو، ريل واي، أو أي موقع استضافة إلكتروني)
+            if (url.includes("<iframe") || url.startsWith("http")) {
+                // لو الأدمن حط لينك مباشر لموقع استضافة يدعم الـ Embed العادي
+                return `<iframe src="${url}" title="Embedded Video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
+            }
+
+            return `<iframe src="${url}" title="Video" frameborder="0" allowfullscreen></iframe>`;
         }
 
         function selectTeacher(teacherName) {
@@ -464,12 +480,9 @@
             const container = document.getElementById('lessonsListContainer');
             container.innerHTML = "";
 
-            // البحث عن بيانات المدرس (مع دعم المسافات والشرط السفلي في المسارات)
             let teacherData = firebaseLessonsData[teacherName] || firebaseLessonsData[teacherName.replace(/\s+/g, '_')] || {};
-
             let hasLessons = false;
 
-            // المرور على الوحدات والدروس الخاصة بالمدرس
             for (let unitKey in teacherData) {
                 let unitName = unitKey.replace(/_/g, ' ');
                 let unitsLessons = teacherData[unitKey];
@@ -484,7 +497,7 @@
                         let lesson = unitsLessons[lessonId];
                         if (lesson && lesson.lessonName) {
                             hasLessons = true;
-                            let yId = extractYouTubeId(lesson.youtubeUrl);
+                            let videoHtml = generateVideoEmbed(lesson.youtubeUrl);
 
                             let lessonDiv = document.createElement('div');
                             lessonDiv.className = 'lesson-item';
@@ -492,12 +505,7 @@
                             lessonDiv.innerHTML = `
                                 <div class="lesson-title">📖 ${lesson.lessonName}</div>
                                 <div class="video-container">
-                                    <iframe src="https://www.youtube-nocookie.com/embed/${yId}?enablejsapi=1&playsinline=1&modestbranding=1" 
-                                            title="YouTube video player" 
-                                            frameborder="0" 
-                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                                            allowfullscreen>
-                                    </iframe>
+                                    ${videoHtml}
                                 </div>
                             `;
                             container.appendChild(lessonDiv);
