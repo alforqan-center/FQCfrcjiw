@@ -3,13 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>On Fire Academy - لوحة التحكم والإدارة</title>
+    <title>On Fire Academy - لوحة التحكم والسيطرة</title>
+    <!-- استيراد مكتبات Firebase عبر CDN -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <style>
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: "Cairo", "Traditional Arabic", "Simplified Arabic", Arial, sans-serif;
+            font-family: "Cairo", Arial, sans-serif;
         }
         body {
             background-color: #0b0f19;
@@ -19,34 +22,6 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
-            position: relative;
-            overflow-x: hidden;
-        }
-        body::before {
-            content: 'f(x) = ∫ e^x dx   ∑ (n=1 to ∞)   π ≈ 3.14159   Δ = b² - 4ac   sin²θ + cos²θ = 1   √x   dy/dx';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            font-size: 15px;
-            color: rgba(255, 107, 0, 0.02);
-            word-spacing: 30px;
-            line-height: 60px;
-            z-index: -2;
-            user-select: none;
-            overflow: hidden;
-            padding: 15px;
-        }
-        body::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, rgba(11, 15, 25, 0.97) 0%, rgba(3, 7, 18, 0.99) 100%);
-            z-index: -1;
         }
         .container {
             max-width: 750px;
@@ -64,9 +39,8 @@
             font-size: 24px; 
             font-weight: 900;
             margin-bottom: 20px;
-            letter-spacing: 1px;
         }
-        .form-section, .search-section, .settings-section {
+        .form-section, .search-section, .settings-section, .stats-section {
             background: #1f2937;
             padding: 18px;
             border-radius: 10px;
@@ -75,6 +49,8 @@
         }
         .search-section { background: #0f172a; border-color: #1e293b; }
         .settings-section { background: #182235; border-color: #ff6b00; border-width: 1.5px; }
+        .stats-section { display: flex; justify-content: space-between; align-items: center; background: #0f172a; border-color: #1e293b; font-size: 14px; font-weight: bold; color: #38bdf8; }
+        
         .form-group { margin-bottom: 15px; }
         label { 
             display: block; 
@@ -93,18 +69,11 @@
             background-color: #030712;
             color: #fff;
             outline: none;
-            transition: all 0.2s ease;
             font-weight: 600;
         }
         input:focus, select:focus {
             border-color: #ff6b00;
             box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.15);
-        }
-        input:disabled, select:disabled {
-            background-color: #0b0f19;
-            color: #64748b;
-            border-color: #1e293b;
-            cursor: not-allowed;
         }
         button {
             background: linear-gradient(135deg, #ff6b00, #e65c00);
@@ -119,10 +88,7 @@
         }
         button:hover { 
             background: linear-gradient(135deg, #e65c00, #cc5200); 
-            transform: translateY(-1px);
         }
-        
-        /* قائمة الأسماء عند البحث */
         .name-list {
             background: #030712;
             border: 1px solid #1f2937;
@@ -141,9 +107,7 @@
             justify-content: space-between;
             align-items: center;
         }
-        .name-item:last-child { border-bottom: none; }
         .name-item:hover { background-color: #1e293b; color: #ff6b00; font-weight: bold; }
-
         .action-buttons {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -151,11 +115,8 @@
             margin-top: 15px;
         }
         .edit-mode-btn { background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; }
-        .edit-mode-btn:hover { background: linear-gradient(135deg, #d97706, #b45309); }
         .delete-mode-btn { background: linear-gradient(135deg, #ef4444, #dc2626); }
-        .delete-mode-btn:hover { background: linear-gradient(135deg, #dc2626, #b91c1c); }
         .new-mode-btn { background: linear-gradient(135deg, #10b981, #059669); }
-        .new-mode-btn:hover { background: linear-gradient(135deg, #059669, #047857); }
     </style>
 </head>
 <body>
@@ -163,23 +124,29 @@
 <div class="container">
     <h2>On Fire Academy - لوحة التحكم</h2>
 
-    <!-- إعدادات كود الكنترول السري -->
+    <!-- الإحصائيات -->
+    <div class="stats-section">
+        <span id="totalStudentsCount">📊 إجمالي الطلاب: جاري التحميل...</span>
+        <button id="refreshBtn" style="width: auto; padding: 6px 14px; font-size: 13px; margin:0;">🔄 تحديث</button>
+    </div>
+
+    <!-- كود الكنترول -->
     <div class="settings-section">
-        <label style="color: #ff6b00;">⚙️ إعدادات الأمان (تغيير كود صفحة الكنترول):</label>
+        <label style="color: #ff6b00;">⚙️ إعدادات الكنترول السري:</label>
         <div style="display: flex; gap: 10px; margin-top: 8px;">
-            <input type="text" id="adminCodeInput" placeholder="أدخل كود الكنترول الجديد (مثل 0000)" maxlength="6">
-            <button onclick="updateAdminCode()" style="width: 140px; margin-top:0;">تحديث الكود</button>
+            <input type="text" id="adminCodeInput" placeholder="كود الكنترول الجديد" maxlength="6">
+            <button id="updateAdminBtn" style="width: 140px; margin-top:0;">تحديث الكود</button>
         </div>
     </div>
 
-    <!-- 1. البحث السريع في الأعلى -->
+    <!-- البحث الفوري -->
     <div class="search-section">
-        <label>🔍 بحث سريع (ابحث باسم الطالب أو الكود):</label>
-        <input type="text" id="searchInput" placeholder="اكتب للبحث الفوري..." autocomplete="off" oninput="filterData()">
+        <label>🔍 بحث سريع (بالاسم أو الكود):</label>
+        <input type="text" id="searchInput" placeholder="اكتب للبحث..." autocomplete="off">
         <div id="nameListContainer" class="name-list" style="display: none;"></div>
     </div>
 
-    <!-- 2. خانات بيانات الطالب -->
+    <!-- نموذج بيانات الطالب -->
     <div class="form-section">
         <input type="hidden" id="originalCode" value="">
         <div class="form-group">
@@ -187,95 +154,76 @@
             <input type="text" id="studentNameInput" placeholder="أدخل اسم الطالب..." autocomplete="off">
         </div>
         <div class="form-group">
-            <label>كود التفعيل:</label>
-            <input type="text" id="codeInput" placeholder="أدخل كود الطالب (4 أرقام)..." autocomplete="off" maxlength="4">
+            <label>كود التفعيل (4 أرقام):</label>
+            <input type="text" id="codeInput" placeholder="أدخل كود الطالب..." autocomplete="off" maxlength="4">
         </div>
         <div class="form-group">
             <label>المرحلة الدراسية:</label>
             <select id="gradeSelect">
-                <option value="first-prep">أولى إعدادي</option>
-                <option value="second-prep">ثانية إعدادي</option>
-                <option value="third-prep">ثالثة إعدادي</option>
-                <option value="first-secondary">أولى ثانوي</option>
-                <option value="second-secondary">ثانية ثانوي</option>
-                <option value="third-secondary">ثالثة ثانوي</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label>حالة الكود:</label>
-            <select id="statusSelect">
-                <option value="true">يعمل</option>
-                <option value="false">لا يعمل</option>
+                <option value="أولى إعدادي">أولى إعدادي</option>
+                <option value="ثانية إعدادي">ثانية إعدادي</option>
+                <option value="ثالثة إعدادي">ثالثة إعدادي</option>
+                <option value="أولى ثانوي">أولى ثانوي</option>
+                <option value="ثانية ثانوي">ثانية ثانوي</option>
+                <option value="ثالثة ثانوي">ثالثة ثانوي</option>
             </select>
         </div>
 
-        <!-- الأزرار الافتراضية (وضع الإضافة) -->
+        <!-- أزرار التحكم -->
         <div id="defaultAddBtnContainer">
-            <button onclick="saveNewStudent()">إضافة طالب جديد</button>
+            <button id="addStudentBtn">إضافة طالب جديد</button>
         </div>
 
-        <!-- الأزرار التي تظهر بعد اختيار طالب من البحث -->
         <div id="selectedStudentActions" class="action-buttons" style="display: none;">
-            <button class="edit-mode-btn" onclick="enableEditing()">تعديل</button>
-            <button class="delete-mode-btn" onclick="deleteSelectedStudent()">حذف</button>
-            <button class="new-mode-btn" onclick="resetToAddNew()">إضافة جديد</button>
+            <button id="editBtn" class="edit-mode-btn">تعديل</button>
+            <button id="deleteBtn" class="delete-mode-btn">حذف</button>
+            <button id="resetBtn" class="new-mode-btn">إضافة جديد</button>
         </div>
     </div>
 </div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js";
-    import { getDatabase, ref, set, get, remove } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js";
-
-    // استخدام الرابط الخاص بك
+<script>
     const firebaseConfig = {
-        databaseURL: "https://alforqan-dfb09-default-rtdb.firebaseio.com//"
+        databaseURL: "https://alforqan-6e69b-default-rtdb.firebaseio.com/"
     };
-
-    // تهيئة Firebase بطريقة الـ Compat المتاحة في المشروع
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
     let allStudentsCache = [];
 
-    // تحميل البيانات وجلب كود الأدمن الحالي
-    window.loadData = async function() {
+    // تحميل البيانات وإحصائيات الطلاب
+    async function loadData() {
         try {
-            // جلب كود الكنترول المحفوظ في القاعدة
             const adminSnapshot = await db.ref('settings/adminCode').once('value');
             if (adminSnapshot.exists()) {
                 document.getElementById("adminCodeInput").value = adminSnapshot.val();
             } else {
-                document.getElementById("adminCodeInput").value = "0000"; // القيمة الافتراضية
+                document.getElementById("adminCodeInput").value = "0000";
             }
 
-            // جلب الأكواد والطلاب من جدول grades
-            const snapshot = await db.ref('grades').once('value');
+            const snapshot = await db.ref('codes').once('value');
             allStudentsCache = [];
             if (snapshot.exists()) {
                 const data = snapshot.val();
-                for (let gradeKey in data) {
-                    if (data[gradeKey] && data[gradeKey].codes) {
-                        let codesObj = data[gradeKey].codes;
-                        for (let codeKey in codesObj) {
-                            let info = codesObj[codeKey];
-                            allStudentsCache.push({
-                                gradeKey: gradeKey,
-                                codeKey: codeKey,
-                                studentName: info.studentName || info.name || "بدون اسم",
-                                active: info.active !== false // افتراضياً يعمل لو لم تُحدد
-                            });
-                        }
-                    }
+                for (let codeKey in data) {
+                    let info = data[codeKey];
+                    allStudentsCache.push({
+                        codeKey: codeKey,
+                        studentName: info.studentName || info.name || "بدون اسم",
+                        grade: info.grade || "أولى إعدادي",
+                        deviceId: info.deviceId || null
+                    });
                 }
             }
+            document.getElementById("totalStudentsCount").innerText = `📊 إجمالي الطلاب المسجلين: ${allStudentsCache.length}`;
         } catch (error) {
-            console.error("خطأ في التحميل", error);
+            console.error("خطأ في جلب البيانات:", error);
+            document.getElementById("totalStudentsCount").innerText = "📊 خطأ في الاتصال بقاعدة البيانات";
         }
-    };
+    }
 
-    // تحديث كود صفحة الكنترول السري في القاعدة
-    window.updateAdminCode = async function() {
+    // تحديث كود الكنترول
+    async function updateAdminCode() {
         const newAdminCode = document.getElementById("adminCodeInput").value.trim();
         if (!newAdminCode) {
             alert("يرجى إدخال كود صحيح للكنترول!");
@@ -287,10 +235,10 @@
         } catch (e) {
             alert("حدث خطأ أثناء تحديث كود الكنترول.");
         }
-    };
+    }
 
-    // دالة البحث الفوري
-    window.filterData = function() {
+    // البحث الفوري
+    function filterData() {
         let query = document.getElementById("searchInput").value.toLowerCase().trim();
         let listContainer = document.getElementById("nameListContainer");
 
@@ -316,71 +264,77 @@
         matched.forEach(item => {
             let div = document.createElement("div");
             div.className = "name-item";
-            div.innerHTML = `<span>👤 ${item.studentName} <span style="color:#94a3b8; font-size:12px;">(${item.codeKey})</span></span> <span style="color:${item.active ? '#10b981':'#ef4444'}">${item.active ? 'يعمل':'لا يعمل'}</span>`;
+            div.innerHTML = `<span>👤 ${item.studentName} <span style="color:#94a3b8; font-size:12px;">(${item.codeKey})</span></span> <span style="color:#38bdf8; font-size:12px;">${item.grade}</span>`;
             div.onclick = function() {
                 selectStudent(item);
             };
             listContainer.appendChild(div);
         });
-    };
+    }
 
-    // عند اختيار طالب من نتائج البحث
-    window.selectStudent = function(item) {
+    // اختيار طالب من القائمة لتعديله أو حذفه
+    function selectStudent(item) {
         document.getElementById("studentNameInput").value = item.studentName;
         document.getElementById("codeInput").value = item.codeKey;
-        document.getElementById("gradeSelect").value = item.gradeKey;
-        document.getElementById("statusSelect").value = item.active ? "true" : "false";
+        document.getElementById("gradeSelect").value = item.grade;
         document.getElementById("originalCode").value = item.codeKey;
 
-        setFieldsLock(true);
+        // قفل حقول المدخلات مؤقتاً لحين الضغط على تعديل
+        document.getElementById("studentNameInput").disabled = true;
+        document.getElementById("codeInput").disabled = true;
+        document.getElementById("gradeSelect").disabled = true;
 
         document.getElementById("defaultAddBtnContainer").style.display = "none";
         document.getElementById("selectedStudentActions").style.display = "grid";
         document.getElementById("nameListContainer").style.display = "none";
         document.getElementById("searchInput").value = "";
-    };
-
-    function setFieldsLock(isLocked) {
-        document.getElementById("studentNameInput").disabled = isLocked;
-        document.getElementById("codeInput").disabled = isLocked;
-        document.getElementById("gradeSelect").disabled = isLocked;
-        document.getElementById("statusSelect").disabled = isLocked;
     }
 
-    window.enableEditing = function() {
-        setFieldsLock(false);
-        let actionsDiv = document.getElementById("selectedStudentActions");
-        actionsDiv.innerHTML = `
-            <button class="new-mode-btn" onclick="saveEditedStudent()" style="grid-column: span 2;">حفظ التعديلات</button>
-            <button class="delete-mode-btn" onclick="resetToAddNew()">إلغاء</button>
-        `;
-    };
+    // تفعيل وضع التعديل
+    function enableEditing() {
+        document.getElementById("studentNameInput").disabled = false;
+        document.getElementById("codeInput").disabled = false;
+        document.getElementById("gradeSelect").disabled = false;
 
-    window.resetToAddNew = function() {
+        let actionsDiv = document.getElementById("selectedStudentActions");
+        actionsDiv.style.display = "grid";
+        actionsDiv.innerHTML = `
+            <button id="saveEditBtn" class="new-mode-btn" style="grid-column: span 2;">حفظ التعديلات</button>
+            <button id="cancelEditBtn" class="delete-mode-btn">إلغاء</button>
+        `;
+
+        document.getElementById("saveEditBtn").addEventListener("click", saveEditedStudent);
+        document.getElementById("cancelEditBtn").addEventListener("click", resetToAddNew);
+    }
+
+    // إعادة النماذج لوضع الإضافة الجديدة
+    function resetToAddNew() {
         document.getElementById("studentNameInput").value = "";
         document.getElementById("codeInput").value = "";
         document.getElementById("originalCode").value = "";
-        document.getElementById("gradeSelect").value = "first-prep";
-        document.getElementById("statusSelect").value = "true";
+        document.getElementById("gradeSelect").value = "أولى إعدادي";
 
-        setFieldsLock(false);
+        document.getElementById("studentNameInput").disabled = false;
+        document.getElementById("codeInput").disabled = false;
+        document.getElementById("gradeSelect").disabled = false;
 
         document.getElementById("defaultAddBtnContainer").style.display = "block";
-        document.getElementById("selectedStudentActions").style.display = "grid";
-        document.getElementById("selectedStudentActions").innerHTML = `
-            <button class="edit-mode-btn" onclick="enableEditing()">تعديل</button>
-            <button class="delete-mode-btn" onclick="deleteSelectedStudent()">حذف</button>
-            <button class="new-mode-btn" onclick="resetToAddNew()">إضافة جديد</button>
-        `;
         document.getElementById("selectedStudentActions").style.display = "none";
-    };
+        
+        // إعادة الأزرار الأصلية
+        document.getElementById("selectedStudentActions").innerHTML = `
+            <button id="editBtn" class="edit-mode-btn">تعديل</button>
+            <button id="deleteBtn" class="delete-mode-btn">حذف</button>
+            <button id="resetBtn" class="new-mode-btn">إضافة جديد</button>
+        `;
+        bindActionButtons();
+    }
 
-    // حفظ طالب جديد
-    window.saveNewStudent = async function() {
+    // إضافة طالب جديد
+    async function saveNewStudent() {
         const name = document.getElementById("studentNameInput").value.trim();
         const code = document.getElementById("codeInput").value.trim();
         const grade = document.getElementById("gradeSelect").value;
-        const active = document.getElementById("statusSelect").value === "true";
 
         if (!name || !code) {
             alert("الرجاء إدخال اسم الطالب وكود التفعيل!");
@@ -388,25 +342,24 @@
         }
 
         try {
-            await db.ref(`grades/${grade}/codes/${code}`).set({
+            await db.ref(`codes/${code}`).set({
                 studentName: name,
-                active: active
+                grade: grade
             });
             alert("تم إضافة الطالب وتفعيل الكود بنجاح!");
             resetToAddNew();
             loadData();
         } catch (e) {
-            alert("حدث خطأ أثناء الحفظ");
+            alert("حدث خطأ أثناء الحفظ في قاعدة البيانات.");
         }
-    };
+    }
 
     // حفظ التعديلات
-    window.saveEditedStudent = async function() {
+    async function saveEditedStudent() {
         const oldCode = document.getElementById("originalCode").value;
         const name = document.getElementById("studentNameInput").value.trim();
         const newCode = document.getElementById("codeInput").value.trim();
         const grade = document.getElementById("gradeSelect").value;
-        const active = document.getElementById("statusSelect").value === "true";
 
         if (!name || !newCode) {
             alert("الرجاء ملء البيانات المطلوبة!");
@@ -415,44 +368,74 @@
 
         try {
             if (oldCode !== newCode) {
-                const gradesList = ["first-prep", "second-prep", "third-prep", "first-secondary", "second-secondary", "third-secondary"];
-                for (let gKey of gradesList) {
-                    await db.ref(`grades/${gKey}/codes/${oldCode}`).remove();
-                }
+                await db.ref(`codes/${oldCode}`).remove();
             }
 
-            await db.ref(`grades/${grade}/codes/${newCode}`).set({
-                studentName: name,
-                active: active
-            });
+            const oldSnap = await db.ref(`codes/${oldCode}`).once('value');
+            let existingDeviceId = null;
+            if (oldSnap.exists() && oldSnap.val().deviceId) {
+                existingDeviceId = oldSnap.val().deviceId;
+            }
 
-            alert("تم تعديل بيانات الطالب وحالة الكود بنجاح!");
+            let updateData = {
+                studentName: name,
+                grade: grade
+            };
+            if (existingDeviceId) updateData.deviceId = existingDeviceId;
+
+            await db.ref(`codes/${newCode}`).set(updateData);
+
+            alert("تم تعديل بيانات الطالب بنجاح!");
             resetToAddNew();
             loadData();
         } catch (e) {
-            alert("حدث خطأ أثناء التعديل");
+            alert("حدث خطأ أثناء التعديل.");
         }
-    };
+    }
 
     // حذف الطالب
-    window.deleteSelectedStudent = async function() {
+    async function deleteSelectedStudent() {
         const code = document.getElementById("codeInput").value.trim();
-        if (confirm("هل أنت متأكد من حذف هذا الطالب وكود التفعيل الخاص به نهائياً؟")) {
+        if (confirm("هل أنت متأكد من حذف هذا الطالب وكود التفعيل نهائياً؟")) {
             try {
-                const gradesList = ["first-prep", "second-prep", "third-prep", "first-secondary", "second-secondary", "third-secondary"];
-                for (let gKey of gradesList) {
-                    await db.ref(`grades/${gKey}/codes/${code}`).remove();
-                }
+                await db.ref(`codes/${code}`).remove();
                 alert("تم حذف الطالب بنجاح.");
                 resetToAddNew();
                 loadData();
             } catch (e) {
-                alert("حدث خطأ أثناء الحذف");
+                alert("حدث خطأ أثناء الحذف.");
             }
         }
-    };
+    }
 
-    loadData();
+    // ربط الأحداث بالأزرار بصورة آمنة
+    function bindActionButtons() {
+        const addBtn = document.getElementById("addStudentBtn");
+        if (addBtn) addBtn.onclick = saveNewStudent;
+
+        const editBtn = document.getElementById("editBtn");
+        if (editBtn) editBtn.onclick = enableEditing;
+
+        const deleteBtn = document.getElementById("deleteBtn");
+        if (deleteBtn) deleteBtn.onclick = deleteSelectedStudent;
+
+        const resetBtn = document.getElementById("resetBtn");
+        if (resetBtn) resetBtn.onclick = resetToAddNew;
+
+        const updateAdminBtn = document.getElementById("updateAdminBtn");
+        if (updateAdminBtn) updateAdminBtn.onclick = updateAdminCode;
+
+        const refreshBtn = document.getElementById("refreshBtn");
+        if (refreshBtn) refreshBtn.onclick = loadData;
+
+        const searchInput = document.getElementById("searchInput");
+        if (searchInput) searchInput.oninput = filterData;
+    }
+
+    window.onload = function() {
+        loadData();
+        bindActionButtons();
+    };
 </script>
 
 </body>
