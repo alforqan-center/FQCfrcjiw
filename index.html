@@ -106,8 +106,8 @@
             // فحص كود الكنترول
             try {
                 const adminSnap = await db.ref('settings/adminCode').once('value');
-                const currentAdminCode = adminSnap.exists() ? adminSnap.val() : "0000";
-                if (codeInput === currentAdminCode) {
+                const currentAdminAdminCode = adminSnap.exists() ? adminSnap.val() : "0000";
+                if (codeInput === currentAdminAdminCode) {
                     localStorage.setItem('activeStudentCode', codeInput);
                     window.location.href = "control.html";
                     return;
@@ -124,6 +124,7 @@
             const codeRef = db.ref('codes/' + codeInput);
 
             try {
+                // جلب أحدث بيانات مباشرة من السيرفر وتجاوز أي كاش محلي
                 const snapshot = await codeRef.once('value');
                 
                 if (!snapshot.exists()) {
@@ -134,8 +135,10 @@
 
                 const codeData = snapshot.val();
 
-                // 🛑 التحقق من حالة الاشتراك (هل الكود متوقف؟)
-                if (codeData.status === 'inactive') {
+                // 🛑 فحص قاطع لحالة الاشتراك (مع تنظيف الفراغات وتوحيد الحروف)
+                let studentStatus = codeData.status ? codeData.status.toString().trim().toLowerCase() : 'active';
+
+                if (studentStatus === 'inactive' || studentStatus === 'stopped' || studentStatus === 'false') {
                     errorMsg.innerText = "عذراً، هذا الكود متوقف مؤقتاً لعدم تجديد الاشتراك.";
                     errorMsg.style.display = 'block';
                     return;
