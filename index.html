@@ -30,7 +30,7 @@
         .login-card input:focus { border-color: #ff6b00; box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.15); }
         .login-card button { width: 100%; background: linear-gradient(135deg, #ff6b00, #e65c00); color: white; border: none; padding: 13px; font-size: 16px; font-weight: 700; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 12px rgba(255, 107, 0, 0.3); }
         .login-card button:hover { background: linear-gradient(135deg, #e65c00, #cc5200); }
-        .error-msg { color: #f87171; margin-top: 15px; font-size: 13px; display: none; background: rgba(239, 68, 68, 0.1); padding: 10px; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.2); text-align: center; font-weight: bold; }
+        .error-msg { color: #f87171; margin-top: 15px; font-size: 13px; display: block; background: rgba(239, 68, 68, 0.1); padding: 10px; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.2); text-align: center; font-weight: bold; }
         footer { text-align: center; padding: 20px; background-color: #0f172a; color: #64748b; font-size: 12px; border-top: 1px solid #1e293b; }
     </style>
 </head>
@@ -57,7 +57,7 @@
             </div>
 
             <button onclick="handleLogin()">دخول المنصة</button>
-            <div id="errorMsg" class="error-msg"></div>
+            <div id="errorMsg" class="error-msg" style="display: none;"></div>
         </div>
     </div>
 
@@ -81,7 +81,6 @@
             return deviceId;
         }
 
-        // دالة تحديد الصفحة بناءً على المرحلة
         function getTargetPageByGrade(grade) {
             if (!grade) return "first-prep.html";
             let g = grade.trim();
@@ -93,6 +92,50 @@
             return "first-prep.html";
         }
 
+        // 🔄 فحص تلقائي عند فتح الصفحة (للدخول التلقائي أو الطرد لو تم إيقافه)
+        window.onload = async function() {
+            const savedCode = localStorage.getItem('activeStudentCode');
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            // لو جايلنا من صفحة محمية برسالة طرد
+            if (urlParams.get('expired') === 'true') {
+                const errorMsg = document.getElementById('errorMsg');
+                errorMsg.innerText = "عذراً، تم إيقاف هذا الكود مؤقتاً لعدم تجديد الاشتراك.";
+                errorMsg.style.display = 'block';
+                localStorage.removeItem('activeStudentCode');
+            }
+
+            if (!savedCode) return;
+
+            // لو الكود مسجل مسبقاً، نتحقق منه لحظياً
+            try {
+                const adminSnap = await db.ref('settings/adminCode').once('value');
+                if (adminSnap.exists() && savedCode === adminSnap.val()) {
+                    window.location.href = "control.html";
+                    return;
+                }
+
+                const snap = await db.ref('codes/' + savedCode).once('value');
+                if (snap.exists()) {
+                    const data = snap.val();
+                    let status = data.status ? data.status.toString().trim().toLowerCase() : 'active';
+                    
+                    if (status === 'inactive' || status === 'stopped' || status === 'false') {
+                        localStorage.removeItem('activeStudentCode');
+                        const errorMsg = document.getElementById('errorMsg');
+                        errorMsg.innerText = "عذراً، هذا الكود متوقف مؤقتاً لعدم تجديد الاشتراك.";
+                        errorMsg.style.display = 'block';
+                        return;
+                    }
+
+                    // لو شغال، دخله تلقائياً لصفحته من غير ما يكتب الكود
+                    window.location.href = getTargetPageByGrade(data.grade);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        };
+
         async function handleLogin() {
             const codeInput = document.getElementById('studentCode').value.trim();
             const errorMsg = document.getElementById('errorMsg');
@@ -103,11 +146,10 @@
                 return;
             }
 
-            // فحص كود الكنترول
             try {
                 const adminSnap = await db.ref('settings/adminCode').once('value');
-                const currentAdminAdminCode = adminSnap.exists() ? adminSnap.val() : "0000";
-                if (codeInput === currentAdminAdminCode) {
+                const currentAdminCode = adminSnap.exists() ? adminSnap.val() : "0000";
+                if (codeInput === currentAdminCode) {
                     localStorage.setItem('activeStudentCode', codeInput);
                     window.location.href = "control.html";
                     return;
@@ -124,7 +166,6 @@
             const codeRef = db.ref('codes/' + codeInput);
 
             try {
-                // جلب أحدث بيانات مباشرة من السيرفر وتجاوز أي كاش محلي
                 const snapshot = await codeRef.once('value');
                 
                 if (!snapshot.exists()) {
@@ -134,8 +175,6 @@
                 }
 
                 const codeData = snapshot.val();
-
-                // 🛑 فحص قاطع لحالة الاشتراك (مع تنظيف الفراغات وتوحيد الحروف)
                 let studentStatus = codeData.status ? codeData.status.toString().trim().toLowerCase() : 'active';
 
                 if (studentStatus === 'inactive' || studentStatus === 'stopped' || studentStatus === 'false') {
@@ -144,14 +183,12 @@
                     return;
                 }
 
-                // قفل الجهاز لو الكود مستخدم على جهاز تاني
                 if (codeData.deviceId && codeData.deviceId !== currentDevice) {
                     errorMsg.innerText = "عذراً، هذا الكود مرتبط بجهاز آخر بالفعل.";
                     errorMsg.style.display = 'block';
                     return;
                 }
 
-                // لو مفيش deviceId متسجل، نسجله للجهاز الحالي
                 if (!codeData.deviceId) {
                     await codeRef.update({
                         deviceId: currentDevice,
@@ -159,15 +196,10 @@
                     });
                 }
 
-                // تحديد المرحلة الدراسية
-                let studentGrade = codeData.grade || "أولى إعدادي";
-                let targetPage = getTargetPageByGrade(studentGrade);
-
                 localStorage.setItem('activeStudentCode', codeInput);
-                window.location.href = targetPage;
+                window.location.href = getTargetPageByGrade(codeData.grade);
 
             } catch (error) {
-                console.error(error);
                 errorMsg.innerText = "حدث خطأ في الاتصال، يرجى المحاولة مرة أخرى.";
                 errorMsg.style.display = 'block';
             }
