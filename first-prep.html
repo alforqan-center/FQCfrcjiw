@@ -237,16 +237,15 @@
             height: 100%;
             border: none;
         }
-        /* درع حماية يغطي منطقة العنوان وزر المشاركة والتضمين بالكامل لمنع أي ضغط عليهم */
-        .video-shield-top {
+        /* درع حماية يغطي الزاوية اليمنى العليا فقط (حيث يظهر زر المشاركة والتضمين) ويترك باقي المشغل يعمل بحرية */
+        .video-shield-corner {
             position: absolute;
             top: 0;
-            left: 0;
-            width: 100%;
-            height: 70px;
+            right: 0;
+            width: 120px;
+            height: 60px;
             z-index: 10;
             background: transparent;
-            cursor: default;
         }
         .back-to-teachers {
             background-color: #1e293b;
@@ -466,7 +465,7 @@
             });
         }
 
-        // دالة تشغيل اليوتيوب مع درع حماية علوي يمنع الضغط نهائياً على زرار المشاركة أو التضمين
+        // تشغيل يوتيوب مع درع ركني يمنع زرار المشاركة فقط ويترك أزرار التشغيل شغالة 100%
         function generateVideoPlayer(rawUrl) {
             if (!rawUrl) return "<p style='color:#ef4444;'>رابط الفيديو غير متوفر</p>";
             let url = rawUrl.trim();
@@ -483,8 +482,8 @@
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                                 allowfullscreen>
                         </iframe>
-                        <!-- درع الحماية لمنع أي ضغطة على زر المشاركة أو التضمين في أعلى الفيديو -->
-                        <div class="video-shield-top"></div>
+                        <!-- درع حماية يغطي الزاوية اليمنى العليا فقط لمنع الضغط على زر المشاركة أو التضمين -->
+                        <div class="video-shield-corner"></div>
                     </div>`;
             }
 
