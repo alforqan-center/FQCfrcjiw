@@ -30,7 +30,7 @@
         .login-card input:focus { border-color: #ff6b00; box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.15); }
         .login-card button { width: 100%; background: linear-gradient(135deg, #ff6b00, #e65c00); color: white; border: none; padding: 13px; font-size: 16px; font-weight: 700; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 12px rgba(255, 107, 0, 0.3); }
         .login-card button:hover { background: linear-gradient(135deg, #e65c00, #cc5200); }
-        .error-msg { color: #f87171; margin-top: 15px; font-size: 13px; display: none; background: rgba(239, 68, 68, 0.1); padding: 10px; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.2); text-align: center; }
+        .error-msg { color: #f87171; margin-top: 15px; font-size: 13px; display: none; background: rgba(239, 68, 68, 0.1); padding: 10px; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.2); text-align: center; font-weight: bold; }
         footer { text-align: center; padding: 20px; background-color: #0f172a; color: #64748b; font-size: 12px; border-top: 1px solid #1e293b; }
     </style>
 </head>
@@ -57,7 +57,7 @@
             </div>
 
             <button onclick="handleLogin()">دخول المنصة</button>
-            <div id="errorMsg" class="error-msg">الكود غير صحيح.</div>
+            <div id="errorMsg" class="error-msg"></div>
         </div>
     </div>
 
@@ -90,7 +90,7 @@
             if (g.includes("أولى ثانوي")) return "first-secondary.html";
             if (g.includes("ثانية ثانوي")) return "second-secondary.html";
             if (g.includes("ثالثة ثانوي")) return "third-secondary.html";
-            return "first-prep.html"; // الافتراضية لأولى إعدادي
+            return "first-prep.html";
         }
 
         async function handleLogin() {
@@ -103,7 +103,7 @@
                 return;
             }
 
-            // فحص كود الكنترول (بجيبه ديناميكياً من قاعدة البيانات أو الافتراضي 0000)
+            // فحص كود الكنترول
             try {
                 const adminSnap = await db.ref('settings/adminCode').once('value');
                 const currentAdminCode = adminSnap.exists() ? adminSnap.val() : "0000";
@@ -126,7 +126,6 @@
             try {
                 const snapshot = await codeRef.once('value');
                 
-                // لو الكود مش موجود خالص في جدول codes
                 if (!snapshot.exists()) {
                     errorMsg.innerText = "عذراً، هذا الكود غير مسجل في النظام.";
                     errorMsg.style.display = 'block';
@@ -134,6 +133,13 @@
                 }
 
                 const codeData = snapshot.val();
+
+                // 🛑 التحقق من حالة الاشتراك (هل الكود متوقف؟)
+                if (codeData.status === 'inactive') {
+                    errorMsg.innerText = "عذراً، هذا الكود متوقف مؤقتاً لعدم تجديد الاشتراك.";
+                    errorMsg.style.display = 'block';
+                    return;
+                }
 
                 // قفل الجهاز لو الكود مستخدم على جهاز تاني
                 if (codeData.deviceId && codeData.deviceId !== currentDevice) {
@@ -150,7 +156,7 @@
                     });
                 }
 
-                // تحديد المرحلة الدراسية بشكل مرن
+                // تحديد المرحلة الدراسية
                 let studentGrade = codeData.grade || "أولى إعدادي";
                 let targetPage = getTargetPageByGrade(studentGrade);
 
