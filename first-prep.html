@@ -488,7 +488,8 @@
                         videoId: item.videoId,
                         playerVars: {
                             'playsinline': 1,
-                            'modestbranding': 1,
+                            // Hides all YouTube player controls, including its share controls; this does not prevent URL extraction.
+                            'controls': 0,
                             'rel': 0,
                             'iv_load_policy': 3
                         },
